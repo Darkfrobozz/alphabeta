@@ -13,8 +13,6 @@ export class Edge {
   }
 
   prune() {
-    console.log(this.parent);
-    console.log(this.color);
     this.color.update(() => (this.pruned ? "black" : "red"));
     this.pruned = !this.pruned;
   }
@@ -118,11 +116,15 @@ export class TreeNode {
   original_value: number | null = null;
   x: number = 0;
   y: number = 0;
+  max: boolean;
 
   constructor(parent: TreeNode | null = null) {
     this.parent = parent;
     if (parent) {
       parent.addChild(this);
+      this.max = !parent.max;
+    } else {
+      this.max = true;
     }
   }
 
@@ -132,6 +134,10 @@ export class TreeNode {
 
   neighbour() {
     return this.children;
+  }
+
+  determine_color() {
+    return this.max ? "red" : "lightblue";
   }
 
   /**
@@ -241,6 +247,10 @@ function deep_node_copy(node: TreeNode, parent: TreeNode | null): TreeNode {
   return ROOT;
 }
 
-function minimax(Tree: TreeNode) {}
+function minimax(input_tree: Tree): Tree | null {
+  if (!input_tree.root) return null;
+  const COPY = new Tree(deep_node_copy(input_tree.root, null));
+  function minimax_run(node: TreeNode) {}
+}
 
 function alphabeta(Tree: TreeNode) {}

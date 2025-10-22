@@ -37,9 +37,9 @@
     tree = tree;
   }
 
-  function solve(solver: (tree: TreeNode) => TreeNode) {
+  function solve(solver: (tree: Tree) => Tree) {
     if (tree) {
-      //tree = solver(tree);
+      tree = solver(tree);
     } else {
       alert("create a tree");
     }
@@ -93,7 +93,12 @@
             on:click={() => update_tree(node)}
             style="cursor: pointer;"
           >
-            <circle r="20" fill="lightblue" stroke="black" stroke-width="2" />
+            <circle
+              r="20"
+              fill={node.determine_color()}
+              stroke="black"
+              stroke-width="2"
+            />
             <text
               text-anchor="middle"
               dominant-baseline="middle"
@@ -106,6 +111,35 @@
         {/each}
       </svg>
     {/if}
+    <section id="legend">
+      <h3>Node Types</h3>
+      <div>
+        <svg width="30" height="30">
+          <circle
+            cx="15"
+            cy="15"
+            r="12"
+            fill="red"
+            stroke="black"
+            stroke-width="2"
+          />
+        </svg>
+        <span>MAX Node</span>
+      </div>
+      <div>
+        <svg width="30" height="30">
+          <circle
+            cx="15"
+            cy="15"
+            r="12"
+            fill="lightblue"
+            stroke="black"
+            stroke-width="2"
+          />
+        </svg>
+        <span>MIN Node</span>
+      </div>
+    </section>
   </section>
 
   <section id="inputs">
@@ -130,6 +164,19 @@
 </main>
 
 <style>
+  #legend {
+    position: absolute;
+    top: 0px;
+    right: 40px;
+    border-top: 4px solid black;
+    padding: 0 10px;
+
+    div {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  }
   /** Section stylings */
   #tree-display {
     width: 1100px;
