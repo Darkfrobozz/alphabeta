@@ -1,16 +1,13 @@
 <script lang="ts">
-  import {
-    create_random_tree,
-    generate_layout,
-    validate_numbers,
-  } from "$lib/Tree";
-  import type { TreeNode } from "$lib/Tree";
+  import { writable, type Writable } from "svelte/store";
+  import { create_random_tree, Tree, validate_numbers } from "$lib/Tree";
+  import type { Edge, TreeNode } from "$lib/Tree";
+  import { fromStore } from "svelte/store";
+  import type { Attachment } from "svelte/attachments";
 
   let tree_height = "";
   let tree_branching = "";
-  let tree: TreeNode | null = null;
-  let edges: Array<{ parent: TreeNode; child: TreeNode; index: number }>;
-  let colors: Array<string> = [];
+  let tree: Tree | null = null;
 
   function generate_tree() {
     console.log("hello");
@@ -18,17 +15,10 @@
     const BRANCH_NUM = Number(tree_branching);
     if (validate_numbers(HEIGHT_NUM, BRANCH_NUM)) {
       const TREE = create_random_tree(HEIGHT_NUM, BRANCH_NUM);
-      generate_layout(TREE, 800, 600);
-      edges = getAllEdges(TREE);
-      for (let i = 0; i < edges.length; i++) {
-        edges[i].index = i;
-      }
-      console.log(edges);
-      colors = edges.map(() => "black");
-
-      // Update
+      TREE.generate_layout(1100, 600);
+      console.log(TREE.root?.deepToString());
       tree = TREE;
-      console.log(create_random_tree(HEIGHT_NUM, BRANCH_NUM).deepToString());
+      console.log(tree.edges);
     } else {
       alert("Enter valid numbers");
     }
@@ -42,46 +32,40 @@
     return nodes;
   }
 
-  function getAllEdges(
-    node: TreeNode
-  ): Array<{ parent: TreeNode; child: TreeNode; index: number }> {
-    let edges: Array<{ parent: TreeNode; child: TreeNode; index: number }> = [];
-
-    node.children.forEach((child) => {
-      edges.push({ parent: node, child: child, index: 0 });
-      edges = edges.concat(getAllEdges(child));
-    });
-    return edges;
-  }
   function update_tree(node: TreeNode) {
     node.propagate();
     tree = tree;
   }
 
-  function color_on_click(edge: {
-    parent: TreeNode;
-    child: TreeNode;
-    index: number;
-  }) {
-    console.log(edge.index);
-    if (colors[edge.index] == "black") {
-      colors[edge.index] = "red";
+  function solve(solver: (tree: TreeNode) => TreeNode) {
+    if (tree) {
+      //tree = solver(tree);
     } else {
-      colors[edge.index] = "black";
+      alert("create a tree");
     }
+  }
+
+  function subscribeToColor(colorStore: Writable<string>): Attachment {
+    return (element) => {
+      const unsubscribe = colorStore.subscribe((color) => {
+        element.setAttribute("stroke", color);
+      });
+
+      return unsubscribe;
+    };
   }
 </script>
 
 <main>
   <section id="tree-display">
     {#if tree}
-      <svg width="800" height="600">
-        {#each edges as edge}
+      <svg width="1100" height="600">
+        {#each tree.edges as edge}
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <!-- Invisible thicker line for easier clicking -->
           <line
-            on:click={() => color_on_click(edge)}
+            on:click={() => edge.prune()}
             x1={edge.parent.x}
             y1={edge.parent.y}
             x2={edge.child.x}
@@ -96,12 +80,12 @@
             y1={edge.parent.y}
             x2={edge.child.x}
             y2={edge.child.y}
-            stroke={colors[edge.index]}
             stroke-width="2"
             style="pointer-events: none;"
+            {@attach subscribeToColor(edge.color)}
           />
         {/each}
-        {#each getAllNodes(tree) as node}
+        {#each tree.nodes as node}
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <g
@@ -140,17 +124,15 @@
       bind:value={tree_branching}
     />
     <button on:click={generate_tree}>Generate</button>
+    <button>Minimax Solve</button>
+    <button>Alphabeta Solve</button>
   </section>
-
-  <p>
-    Depth: {tree_height}, Branching: {tree_branching}
-  </p>
 </main>
 
 <style>
   /** Section stylings */
   #tree-display {
-    width: 800px;
+    width: 1100px;
     height: 600px;
     border: 4px solid black;
 
