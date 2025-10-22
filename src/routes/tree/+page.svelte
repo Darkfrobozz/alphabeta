@@ -1,24 +1,29 @@
 <script lang="ts">
   import { writable, type Writable } from "svelte/store";
-  import { create_random_tree, Tree, validate_numbers } from "$lib/Tree";
+  import {
+    alphabeta,
+    create_random_tree,
+    deep_node_copy,
+    minimax,
+    traversalHighlight,
+    Tree,
+    validate_numbers,
+  } from "$lib/Tree";
   import type { Edge, TreeNode } from "$lib/Tree";
   import { fromStore } from "svelte/store";
   import type { Attachment } from "svelte/attachments";
 
-  let tree_height = "";
-  let tree_branching = "";
+  let tree_height = "4";
+  let tree_branching = "3";
   let tree: Tree | null = null;
 
   function generate_tree() {
-    console.log("hello");
     const HEIGHT_NUM = Number(tree_height);
     const BRANCH_NUM = Number(tree_branching);
     if (validate_numbers(HEIGHT_NUM, BRANCH_NUM)) {
       const TREE = create_random_tree(HEIGHT_NUM, BRANCH_NUM);
       TREE.generate_layout(1100, 600);
-      console.log(TREE.root?.deepToString());
       tree = TREE;
-      console.log(tree.edges);
     } else {
       alert("Enter valid numbers");
     }
@@ -37,9 +42,14 @@
     tree = tree;
   }
 
-  function solve(solver: (tree: Tree) => Tree) {
+  function solve(solver: (tree: Tree) => Tree | null) {
     if (tree) {
-      tree = solver(tree);
+      const temp = solver(tree);
+      if (temp) {
+        tree = temp;
+      } else {
+        console.error("Solver broke");
+      }
     } else {
       alert("create a tree");
     }
@@ -53,6 +63,37 @@
 
       return unsubscribe;
     };
+  }
+
+  function subscribeToHighlight(highlightStore: Writable<boolean>): Attachment {
+    return (element) => {
+      const unsubscribe = highlightStore.subscribe((outline) => {
+        console.log("outline: ", outline);
+        if (outline) {
+          element.classList.add("highlighted");
+        } else {
+          element.classList.remove("highlighted");
+        }
+      });
+
+      return unsubscribe;
+    };
+  }
+
+  function reset_active_tree() {
+    if (tree) {
+      tree = new Tree(deep_node_copy(tree.root, null));
+    } else {
+      alert("No tree to reset selected");
+    }
+  }
+
+  async function activate_highlight() {
+    if (tree) {
+      await traversalHighlight(tree.root);
+    } else {
+      alert("No tree to reset selected");
+    }
   }
 </script>
 
@@ -96,8 +137,10 @@
             <circle
               r="20"
               fill={node.determine_color()}
-              stroke="black"
               stroke-width="2"
+              stroke="black"
+              {@attach subscribeToHighlight(node.highlight)}
+              class="highlighted"
             />
             <text
               text-anchor="middle"
@@ -158,12 +201,19 @@
       bind:value={tree_branching}
     />
     <button on:click={generate_tree}>Generate</button>
-    <button>Minimax Solve</button>
-    <button>Alphabeta Solve</button>
+    <button on:click={() => solve(minimax)}>Minimax Solve</button>
+    <button on:click={() => solve(alphabeta)}>Alphabeta Solve</button>
+    <button on:click={reset_active_tree}>Reset</button>
+    <button on:click={activate_highlight}>Highlight</button>
   </section>
 </main>
 
 <style>
+  .highlighted {
+    stroke: orange; /* border equivalent */
+    stroke-width: 2; /* thickness of the border */
+    stroke-linejoin: round;
+  }
   #legend {
     position: absolute;
     top: 0px;

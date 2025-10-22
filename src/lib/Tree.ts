@@ -19,11 +19,11 @@ export class Edge {
 }
 
 export class Tree {
-  root: TreeNode | null = null;
+  root: TreeNode;
   nodes: TreeNode[] = [];
   edges: Edge[] = [];
 
-  constructor(root: TreeNode | null = null) {
+  constructor(root: TreeNode) {
     this.root = root;
     if (root) {
       this.updateLists();
@@ -117,9 +117,12 @@ export class TreeNode {
   x: number = 0;
   y: number = 0;
   max: boolean;
+  leaf: boolean = false;
+  highlight: Writable<boolean>;
 
   constructor(parent: TreeNode | null = null) {
     this.parent = parent;
+    this.highlight = writable(false);
     if (parent) {
       parent.addChild(this);
       this.max = !parent.max;
@@ -153,6 +156,8 @@ export class TreeNode {
     tree_copy.y = this.y;
     tree_copy.original_value = this.original_value;
     tree_copy.value = this.original_value;
+    tree_copy.max = this.max;
+    tree_copy.leaf = this.leaf;
     return tree_copy;
   }
 
@@ -232,6 +237,7 @@ export function create_random_tree(
   fronteir.forEach((leaf) => {
     leaf.randomize(start, end);
     leaf.set_og_value();
+    leaf.leaf = true;
   });
 
   const TREE = new Tree(ROOT);
@@ -239,18 +245,79 @@ export function create_random_tree(
   return TREE;
 }
 
-function deep_node_copy(node: TreeNode, parent: TreeNode | null): TreeNode {
+export function deep_node_copy(
+  node: TreeNode,
+  parent: TreeNode | null
+): TreeNode {
   const ROOT = node.og_copy(parent);
-  ROOT.children.map((child) => {
-    deep_node_copy(child, parent);
-  });
+  ROOT.children = node.children.map((child) => deep_node_copy(child, ROOT));
   return ROOT;
 }
 
-function minimax(input_tree: Tree): Tree | null {
-  if (!input_tree.root) return null;
+export function minimax(input_tree: Tree): Tree | null {
   const COPY = new Tree(deep_node_copy(input_tree.root, null));
-  function minimax_run(node: TreeNode) {}
+  function minimax_run(node: TreeNode): number {
+    if (node.value == null) {
+      const child_values = node.children.map((child) => minimax_run(child));
+      node.value = node.max
+        ? Math.max(...child_values)
+        : Math.min(...child_values);
+    }
+    return node.value;
+  }
+  minimax_run(COPY.root);
+  return COPY;
 }
 
-function alphabeta(Tree: TreeNode) {}
+export function alphabeta(input_tree: Tree): Tree | null {
+  const COPY = new Tree(deep_node_copy(input_tree.root, null));
+  function alpha_beta_run(
+    node: TreeNode,
+    alpha: number,
+    beta: number
+  ): number | null {
+    if (node.leaf) {
+      return node.value;
+    }
+    // If we receive and are max we should update our alpha, if we receive and are min we should update our beta.
+    for (let i = 0; i < node.children.length; i++) {
+      const element = node.children[i];
+      const val = alpha_beta_run(element, alpha, beta);
+      if (val == null) {
+        console.error("algorithm broke");
+        return null;
+      }
+
+      if (node.max) {
+        alpha = Math.max(val, alpha);
+      } else {
+        beta = Math.min(val, beta);
+      }
+
+      // break and potentially show pruning.
+      if (alpha >= beta) {
+        // Insert pruning here
+        break;
+      }
+    }
+    node.value = node.max ? alpha : beta;
+    return node.value;
+  }
+  alpha_beta_run(COPY.root, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY);
+  return COPY;
+}
+
+export async function traversalHighlight(
+  node: TreeNode | null,
+  delay: number = 500
+): Promise<void> {
+  if (!node) return;
+
+  for (const child of node.children) {
+    await traversalHighlight(child, delay);
+  }
+
+  node.highlight.set(true);
+  await new Promise((resolve) => setTimeout(resolve, delay));
+  node.highlight.set(false);
+}
