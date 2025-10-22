@@ -10,6 +10,7 @@ export class Edge {
     this.child = child;
     this.pruned = false;
     this.color = writable("black");
+    child.parent_edge = this;
   }
 
   prune() {
@@ -111,6 +112,7 @@ export class Tree {
 }
 export class TreeNode {
   parent: TreeNode | null = null;
+  parent_edge: Edge | null = null;
   children: TreeNode[] = [];
   value: number | null = null;
   original_value: number | null = null;
@@ -254,8 +256,7 @@ export function deep_node_copy(
   return ROOT;
 }
 
-export function minimax(input_tree: Tree): Tree | null {
-  const COPY = new Tree(deep_node_copy(input_tree.root, null));
+export async function minimax(input_tree: Tree): Promise<Tree | null> {
   function minimax_run(node: TreeNode): number {
     if (node.value == null) {
       const child_values = node.children.map((child) => minimax_run(child));
@@ -265,24 +266,40 @@ export function minimax(input_tree: Tree): Tree | null {
     }
     return node.value;
   }
-  minimax_run(COPY.root);
-  return COPY;
+  minimax_run(input_tree.root);
+  return input_tree;
 }
 
-export function alphabeta(input_tree: Tree): Tree | null {
-  const COPY = new Tree(deep_node_copy(input_tree.root, null));
-  function alpha_beta_run(
+export async function alphabeta(
+  input_tree: Tree,
+  animate: boolean = true
+): Promise<Tree | null> {
+  function prune_remaining(children: Array<TreeNode>) {
+    children.forEach((child) => {
+      if (child.parent_edge) {
+        child.parent_edge.prune();
+      } else {
+        console.error("No parent edge, needs to execute on child nodes");
+      }
+    });
+  }
+
+  async function alpha_beta_run(
     node: TreeNode,
     alpha: number,
     beta: number
-  ): number | null {
+  ): Promise<number | null> {
     if (node.leaf) {
       return node.value;
     }
+    let current = node.max
+      ? Number.NEGATIVE_INFINITY
+      : Number.POSITIVE_INFINITY;
+    await highlight_node(node, 200);
     // If we receive and are max we should update our alpha, if we receive and are min we should update our beta.
     for (let i = 0; i < node.children.length; i++) {
       const element = node.children[i];
-      const val = alpha_beta_run(element, alpha, beta);
+      const val = await alpha_beta_run(element, alpha, beta);
       if (val == null) {
         console.error("algorithm broke");
         return null;
@@ -290,21 +307,30 @@ export function alphabeta(input_tree: Tree): Tree | null {
 
       if (node.max) {
         alpha = Math.max(val, alpha);
+        current = Math.max(val, current);
+        if (current >= beta) {
+          prune_remaining(node.children.slice(i + 1));
+          break;
+        }
       } else {
         beta = Math.min(val, beta);
+        current = Math.min(val, current);
+        if (current <= alpha) {
+          prune_remaining(node.children.slice(i + 1));
+          break;
+        }
       }
-
-      // break and potentially show pruning.
-      if (alpha >= beta) {
-        // Insert pruning here
-        break;
-      }
+      await highlight_node(element, 200);
     }
-    node.value = node.max ? alpha : beta;
-    return node.value;
+    node.value = current;
+    return current;
   }
-  alpha_beta_run(COPY.root, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY);
-  return COPY;
+  await alpha_beta_run(
+    input_tree.root,
+    Number.NEGATIVE_INFINITY,
+    Number.POSITIVE_INFINITY
+  );
+  return input_tree;
 }
 
 export async function traversalHighlight(
@@ -317,6 +343,10 @@ export async function traversalHighlight(
     await traversalHighlight(child, delay);
   }
 
+  await highlight_node(node, delay);
+}
+
+async function highlight_node(node: TreeNode, delay: number) {
   node.highlight.set(true);
   await new Promise((resolve) => setTimeout(resolve, delay));
   node.highlight.set(false);

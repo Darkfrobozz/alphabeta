@@ -16,6 +16,7 @@
   let tree_height = "4";
   let tree_branching = "3";
   let tree: Tree | null = null;
+  let rerenderTrigger = 1;
 
   function generate_tree() {
     const HEIGHT_NUM = Number(tree_height);
@@ -42,11 +43,13 @@
     tree = tree;
   }
 
-  function solve(solver: (tree: Tree) => Tree | null) {
+  async function solve(solver: (tree: Tree) => Promise<Tree | null>) {
     if (tree) {
-      const temp = solver(tree);
-      if (temp) {
-        tree = temp;
+      const COPY = new Tree(deep_node_copy(tree.root, null));
+      tree = COPY;
+      await solver(tree);
+      if (COPY) {
+        tree = COPY;
       } else {
         console.error("Solver broke");
       }
@@ -68,7 +71,6 @@
   function subscribeToHighlight(highlightStore: Writable<boolean>): Attachment {
     return (element) => {
       const unsubscribe = highlightStore.subscribe((outline) => {
-        console.log("outline: ", outline);
         if (outline) {
           element.classList.add("highlighted");
         } else {
@@ -99,61 +101,63 @@
 
 <main>
   <section id="tree-display">
-    {#if tree}
-      <svg width="1100" height="600">
-        {#each tree.edges as edge}
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <!-- Invisible thicker line for easier clicking -->
-          <line
-            on:click={() => edge.prune()}
-            x1={edge.parent.x}
-            y1={edge.parent.y}
-            x2={edge.child.x}
-            y2={edge.child.y}
-            stroke="transparent"
-            stroke-width="10"
-            style="cursor: pointer;"
-          />
-          <!-- Visible line -->
-          <line
-            x1={edge.parent.x}
-            y1={edge.parent.y}
-            x2={edge.child.x}
-            y2={edge.child.y}
-            stroke-width="2"
-            style="pointer-events: none;"
-            {@attach subscribeToColor(edge.color)}
-          />
-        {/each}
-        {#each tree.nodes as node}
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <g
-            transform="translate({node.x}, {node.y})"
-            on:click={() => update_tree(node)}
-            style="cursor: pointer;"
-          >
-            <circle
-              r="20"
-              fill={node.determine_color()}
-              stroke-width="2"
-              stroke="black"
-              {@attach subscribeToHighlight(node.highlight)}
-              class="highlighted"
+    {#key rerenderTrigger}
+      {#if tree}
+        <svg width="1100" height="600">
+          {#each tree.edges as edge}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <!-- Invisible thicker line for easier clicking -->
+            <line
+              on:click={() => edge.prune()}
+              x1={edge.parent.x}
+              y1={edge.parent.y}
+              x2={edge.child.x}
+              y2={edge.child.y}
+              stroke="transparent"
+              stroke-width="10"
+              style="cursor: pointer;"
             />
-            <text
-              text-anchor="middle"
-              dominant-baseline="middle"
-              font-size="12"
-              fill="black"
+            <!-- Visible line -->
+            <line
+              x1={edge.parent.x}
+              y1={edge.parent.y}
+              x2={edge.child.x}
+              y2={edge.child.y}
+              stroke-width="2"
+              style="pointer-events: none;"
+              {@attach subscribeToColor(edge.color)}
+            />
+          {/each}
+          {#each tree.nodes as node}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <g
+              transform="translate({node.x}, {node.y})"
+              on:click={() => update_tree(node)}
+              style="cursor: pointer;"
             >
-              {node.value}
-            </text>
-          </g>
-        {/each}
-      </svg>
-    {/if}
+              <circle
+                r="20"
+                fill={node.determine_color()}
+                stroke-width="2"
+                stroke="black"
+                {@attach subscribeToHighlight(node.highlight)}
+                class="highlighted"
+              />
+              <text
+                text-anchor="middle"
+                dominant-baseline="middle"
+                font-size="12"
+                fill="black"
+              >
+                {node.value}
+              </text>
+            </g>
+          {/each}
+        </svg>
+      {/if}
+    {/key}
     <section id="legend">
       <h3>Node Types</h3>
       <div>
