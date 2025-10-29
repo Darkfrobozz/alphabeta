@@ -1,3 +1,6 @@
-# allow crawling everything by default
+# TDM reservation
+TDM-reservation: 1
+
+# Allow general crawling  
 User-agent: *
-Disallow:
+Allow: /
