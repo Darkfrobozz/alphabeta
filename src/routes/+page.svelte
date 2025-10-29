@@ -1,6 +1,7 @@
-<h1>Welcome to SvelteKit</h1>
+<h1>Welcome to an Alphabeta & Minimax Simulator</h1>
 <p>
-  Visit <a href="/tree">svelte.dev/docs/kit</a> to read the documentation
+  Start by creating a tree and then try to solve it using the minimax or
+  alphabeta in the <a href="tree">simulator</a>.
 </p>
 
 <style lang="scss">

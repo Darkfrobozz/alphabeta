@@ -1,4 +1,9 @@
 import { get, writable, type Writable } from "svelte/store";
+let id = 1;
+function get_id(): number {
+  return id++;
+}
+
 export class Edge {
   parent: TreeNode;
   child: TreeNode;
@@ -17,8 +22,6 @@ export class Edge {
     this.color.update(() => (this.pruned ? "black" : "red"));
     this.pruned = !this.pruned;
   }
-
-
 }
 
 export class Tree {
@@ -48,6 +51,11 @@ export class Tree {
     return nodes;
   }
 
+  /**
+   * @theorem If inputs are the same in terms of structure, the edges produced should be in the same order.
+   * @param node 
+   * @returns 
+   */
   private getAllEdges(node: TreeNode): Edge[] {
     let edges: Edge[] = [];
 
@@ -114,7 +122,9 @@ export class Tree {
 
   equal(other: Tree): boolean {
     // We need some other way to check if the edges are the same
-    return this.root.equal(other.root);
+    // This assumes that the two trees have exactly the same structure and order of nodes and edges,
+    // which the pre conditions for the copy method and theorem for edge method provides.
+    return this.root.equal(other.root) && this.edges.every((edge, index) => edge.pruned == other.edges[index].pruned);
   }
 }
 export class TreeNode {
@@ -261,6 +271,12 @@ export function create_random_tree(
   return TREE;
 }
 
+/**
+ * @post Output should have identical structure on tree nodes as input, order of children must be the same
+ * @param node 
+ * @param parent 
+ * @returns 
+ */
 export function deep_node_copy(
   node: TreeNode,
   parent: TreeNode | null
