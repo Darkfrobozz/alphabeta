@@ -15,9 +15,12 @@
   let tree_height = "4";
   let tree_branching = "3";
   let tree: Tree | null = null;
+  let saved_tree: Tree | null = null;
   let rerenderTrigger = 1;
+  let correct: null | boolean = null;
 
   function generate_tree() {
+    correct = null;
     const HEIGHT_NUM = Number(tree_height);
     const BRANCH_NUM = Number(tree_branching);
     if (validate_numbers(HEIGHT_NUM, BRANCH_NUM)) {
@@ -29,14 +32,6 @@
     }
   }
 
-  function getAllNodes(node: TreeNode): TreeNode[] {
-    let nodes = [node];
-    node.children.forEach((child) => {
-      nodes = nodes.concat(getAllNodes(child));
-    });
-    return nodes;
-  }
-
   function update_tree(node: TreeNode) {
     node.propagate();
     tree = tree;
@@ -44,14 +39,10 @@
 
   async function solve(solver: (tree: Tree) => Promise<Tree | null>) {
     if (tree) {
-      const COPY = new Tree(deep_node_copy(tree.root, null));
-      tree = COPY;
+      saved_tree = tree;
+      tree = new Tree(deep_node_copy(tree.root, null));
       await solver(tree);
-      if (COPY) {
-        tree = COPY;
-      } else {
-        console.error("Solver broke");
-      }
+      correct = saved_tree.equal(tree);
     } else {
       alert("create a tree");
     }
@@ -94,6 +85,7 @@
   function reset_active_tree() {
     if (tree) {
       tree = new Tree(deep_node_copy(tree.root, null));
+      correct = null;
     } else {
       alert("No tree to reset selected");
     }
@@ -110,6 +102,45 @@
 
 <main>
   <section id="tree-display">
+    {#if correct !== null}
+      <div class="correctness_feedback">
+        {#if correct}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            role="img"
+            aria-labelledby="checkTitle"
+            fill="none"
+            stroke="green"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <title id="checkTitle">Checkmark</title>
+            <path d="M20 6 L9 17 L4 12" />
+          </svg>
+        {:else}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            role="img"
+            aria-labelledby="crossTitle"
+            fill="none"
+            stroke="red"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <title id="crossTitle">Cross</title>
+            <path d="M6 6 L18 18 M6 18 L18 6" />
+          </svg>
+        {/if}
+      </div>
+    {/if}
     {#key rerenderTrigger}
       {#if tree}
         <svg width="1100" height="600">
@@ -168,35 +199,35 @@
         </svg>
       {/if}
     {/key}
-    <section id="legend">
-      <h3>Node Types</h3>
-      <div>
-        <svg width="30" height="30">
-          <circle
-            cx="15"
-            cy="15"
-            r="12"
-            fill="red"
-            stroke="black"
-            stroke-width="2"
-          />
-        </svg>
-        <span>MAX Node</span>
-      </div>
-      <div>
-        <svg width="30" height="30">
-          <circle
-            cx="15"
-            cy="15"
-            r="12"
-            fill="lightblue"
-            stroke="black"
-            stroke-width="2"
-          />
-        </svg>
-        <span>MIN Node</span>
-      </div>
-    </section>
+  </section>
+  <section id="legend">
+    <h3>Node Types</h3>
+    <div>
+      <svg width="30" height="30">
+        <circle
+          cx="15"
+          cy="15"
+          r="12"
+          fill="red"
+          stroke="black"
+          stroke-width="2"
+        />
+      </svg>
+      <span>MAX Node</span>
+    </div>
+    <div>
+      <svg width="30" height="30">
+        <circle
+          cx="15"
+          cy="15"
+          r="12"
+          fill="lightblue"
+          stroke="black"
+          stroke-width="2"
+        />
+      </svg>
+      <span>MIN Node</span>
+    </div>
   </section>
 
   <section id="inputs">
@@ -246,6 +277,13 @@
     width: 1100px;
     height: 600px;
     border: 4px solid black;
+    position: relative;
+
+    .correctness_feedback {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
 
     /** Tree styling */
   }

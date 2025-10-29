@@ -3,7 +3,7 @@ export class Edge {
   parent: TreeNode;
   child: TreeNode;
   color: Writable<string>;
-  private pruned: boolean;
+  pruned: boolean;
 
   constructor(parent: TreeNode, child: TreeNode) {
     this.parent = parent;
@@ -17,6 +17,8 @@ export class Edge {
     this.color.update(() => (this.pruned ? "black" : "red"));
     this.pruned = !this.pruned;
   }
+
+
 }
 
 export class Tree {
@@ -108,6 +110,11 @@ export class Tree {
     }
 
     positionNodes(this.root, width, 0, 1);
+  }
+
+  equal(other: Tree): boolean {
+    // We need some other way to check if the edges are the same
+    return this.root.equal(other.root);
   }
 }
 export class TreeNode {
@@ -202,6 +209,16 @@ export class TreeNode {
     }
 
     return result;
+  }
+
+  equal(other: TreeNode): boolean {
+    // if (get(this.value) != get(other.value)) {
+    //   console.log("At ", get(this.value));
+    //   console.log("We should have had", get(other.value));
+    //   console.log(this);
+    //   console.log(other);
+    // }
+    return get(this.value) == get(other.value) && this.children.every((child, index) => child.equal(other.children[index]));
   }
 }
 
