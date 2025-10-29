@@ -98,6 +98,12 @@
       alert("No tree to reset selected");
     }
   }
+
+  function toggle_tree() {
+    const TEMP = tree;
+    tree = saved_tree;
+    saved_tree = TEMP;
+  }
 </script>
 
 <main>
@@ -246,10 +252,19 @@
       bind:value={tree_branching}
     />
     <button on:click={generate_tree}>Generate</button>
-    <button on:click={() => solve(minimax)}>Minimax Solve</button>
-    <button on:click={() => solve(alphabeta)}>Alphabeta Solve</button>
-    <button on:click={reset_active_tree}>Reset</button>
-    <button on:click={activate_highlight}>Highlight</button>
+    <button on:click={() => solve(minimax)} disabled={tree === null}
+      >Minimax Solve</button
+    >
+    <button on:click={() => solve(alphabeta)} disabled={tree === null}
+      >Alphabeta Solve</button
+    >
+    <button on:click={reset_active_tree} disabled={tree === null}>Reset</button>
+    <button on:click={activate_highlight} disabled={tree === null}
+      >Highlight</button
+    >
+    <button on:click={toggle_tree} disabled={saved_tree === null}
+      >Toggle Tree</button
+    >
   </section>
 </main>
 
@@ -322,7 +337,7 @@
     }
 
     button {
-      padding: 0.75rem 1.5rem;
+      padding: 0.5rem 1.5rem;
       background-color: #007bff;
       color: white;
       border: none;
@@ -330,15 +345,50 @@
       font-size: 1rem;
       font-weight: bold;
       cursor: pointer;
-      margin-top: 0.5rem;
+      margin-top: 0.2rem;
 
-      &:hover {
-        background-color: #0056b3;
+      &:not(:disabled) {
+        &:hover {
+          background-color: #0056b3;
+        }
+
+        &:active {
+          transform: translateY(1px);
+        }
       }
 
-      &:active {
-        transform: translateY(1px);
+      &:disabled {
+        background-color: gray;
+        color: black;
+        border-color: black;
+        cursor: not-allowed;
+        opacity: 0.65;
+
+        &:active {
+          animation: shake 0.5s ease-in-out;
+          background-color: red;
+        }
       }
+    }
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+      transform: translateX(-5px);
+    }
+    20%,
+    40%,
+    60%,
+    80% {
+      transform: translateX(5px);
     }
   }
 
