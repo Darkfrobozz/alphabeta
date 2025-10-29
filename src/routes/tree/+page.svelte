@@ -12,6 +12,11 @@
   import type { Edge, TreeNode } from "$lib/Tree";
   import type { Attachment } from "svelte/attachments";
 
+  const WIDTH = 1100;
+  const HEIGHT = 600;
+
+  let show_inputs = false;
+
   let tree_height = "4";
   let tree_branching = "3";
   let tree: Tree | null = null;
@@ -25,7 +30,7 @@
     const BRANCH_NUM = Number(tree_branching);
     if (validate_numbers(HEIGHT_NUM, BRANCH_NUM)) {
       const TREE = create_random_tree(HEIGHT_NUM, BRANCH_NUM);
-      TREE.generate_layout(1100, 600);
+      TREE.generate_layout(WIDTH, HEIGHT);
       tree = TREE;
     } else {
       alert("Enter valid numbers");
@@ -106,7 +111,7 @@
   }
 </script>
 
-<main>
+<main style="--width: {WIDTH}px; --height: {HEIGHT}px;">
   <section id="tree-display">
     {#if correct !== null}
       <div class="correctness_feedback">
@@ -207,7 +212,7 @@
     {/key}
   </section>
   <section id="legend">
-    <h3>Node Types</h3>
+    <h3>Node Types:</h3>
     <div>
       <svg width="30" height="30">
         <circle
@@ -236,39 +241,91 @@
     </div>
   </section>
 
-  <section id="inputs">
-    <label for="tree-height">Depth: </label>
-    <input
-      type="text"
-      name="tree-height"
-      id="tree-height"
-      bind:value={tree_height}
-    />
-    <label for="tree-branching">Branching: </label>
-    <input
-      type="text"
-      name="tree-branching"
-      id="tree-branching"
-      bind:value={tree_branching}
-    />
-    <button on:click={generate_tree}>Generate</button>
-    <button on:click={() => solve(minimax)} disabled={tree === null}
-      >Minimax Solve</button
+  {#if show_inputs}
+    <section id="inputs">
+      <button
+        on:click={() => (show_inputs = false)}
+        id="close-inputs-button"
+        aria-label="Close"
+        ><svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          role="img"
+          aria-labelledby="crossTitle"
+          fill="none"
+          stroke="black"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <title id="crossTitle">Cross</title>
+          <path d="M6 6 L18 18 M6 18 L18 6" />
+        </svg></button
+      >
+      <label for="tree-height">Depth: </label>
+      <input
+        type="text"
+        name="tree-height"
+        id="tree-height"
+        bind:value={tree_height}
+      />
+      <label for="tree-branching">Branching: </label>
+      <input
+        type="text"
+        name="tree-branching"
+        id="tree-branching"
+        bind:value={tree_branching}
+      />
+      <button on:click={generate_tree}>Generate</button>
+      <button on:click={() => solve(minimax)} disabled={tree === null}
+        >Minimax Solve</button
+      >
+      <button on:click={() => solve(alphabeta)} disabled={tree === null}
+        >Alphabeta Solve</button
+      >
+      <button on:click={reset_active_tree} disabled={tree === null}
+        >Reset</button
+      >
+      <button on:click={activate_highlight} disabled={tree === null}
+        >Highlight</button
+      >
+      <button on:click={toggle_tree} disabled={saved_tree === null}
+        >Toggle Tree</button
+      >
+    </section>
+  {:else}
+    <button id="show-input-button" on:click={() => (show_inputs = true)}
+      >Show Inputs</button
     >
-    <button on:click={() => solve(alphabeta)} disabled={tree === null}
-      >Alphabeta Solve</button
-    >
-    <button on:click={reset_active_tree} disabled={tree === null}>Reset</button>
-    <button on:click={activate_highlight} disabled={tree === null}
-      >Highlight</button
-    >
-    <button on:click={toggle_tree} disabled={saved_tree === null}
-      >Toggle Tree</button
-    >
-  </section>
+  {/if}
+
+  <a href="/" aria-label="Home" id="home">Back</a>
 </main>
 
 <style>
+  #home {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+    text-transform: uppercase;
+
+    &:hover {
+      background-color: #0056b3;
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+  }
+
   .highlighted {
     stroke: orange; /* border equivalent */
     stroke-width: 2; /* thickness of the border */
@@ -277,20 +334,24 @@
   #legend {
     position: absolute;
     top: 0px;
-    right: 40px;
     border-top: 4px solid black;
     padding: 0 10px;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    text-transform: uppercase;
 
     div {
       display: flex;
       align-items: center;
+      flex-direction: row;
       gap: 10px;
     }
   }
   /** Section stylings */
   #tree-display {
-    width: 1100px;
-    height: 600px;
+    width: var(--width);
+    height: var(--height);
     border: 4px solid black;
     position: relative;
 
@@ -303,16 +364,46 @@
     /** Tree styling */
   }
 
+  #show-input-button,
+  #close-inputs-button {
+    position: absolute;
+    top: 0;
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    text-transform: uppercase;
+
+    &:hover {
+      background-color: gray;
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+  }
+  #show-input-button {
+    left: 0;
+  }
+
+  #close-inputs-button {
+    right: 0;
+    display: flex;
+    align-items: center;
+  }
+
   #inputs {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    margin-top: 2rem;
     padding: 1.5rem;
     border: 2px solid #ccc;
     border-radius: 8px;
     background-color: #f9f9f9;
     width: 300px;
+    position: absolute;
+    left: 0;
+    top: 0;
 
     /** Input Stylings */
 
@@ -336,7 +427,7 @@
       }
     }
 
-    button {
+    button:not(#close-inputs-button) {
       padding: 0.5rem 1.5rem;
       background-color: #007bff;
       color: white;
