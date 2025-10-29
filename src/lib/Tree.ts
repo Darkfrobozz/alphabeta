@@ -1,4 +1,4 @@
-import { writable, type Writable } from "svelte/store";
+import { get, writable, type Writable } from "svelte/store";
 export class Edge {
   parent: TreeNode;
   child: TreeNode;
@@ -114,7 +114,7 @@ export class TreeNode {
   parent: TreeNode | null = null;
   parent_edge: Edge | null = null;
   children: TreeNode[] = [];
-  value: number | null = null;
+  value: Writable<number | null> = writable(null);
   original_value: number | null = null;
   x: number = 0;
   y: number = 0;
@@ -157,7 +157,7 @@ export class TreeNode {
     tree_copy.x = this.x;
     tree_copy.y = this.y;
     tree_copy.original_value = this.original_value;
-    tree_copy.value = this.original_value;
+    tree_copy.value.set(this.original_value);
     tree_copy.max = this.max;
     tree_copy.leaf = this.leaf;
     return tree_copy;
@@ -168,13 +168,12 @@ export class TreeNode {
    * @param start Inclusive
    * @param end Exclusive
    */
-  randomize(start: number, end: number) {
-    this.value = Math.floor(Math.random() * (end - start) + start);
+  randomize_leaf(start: number, end: number) {
+    this.original_value = Math.floor(Math.random() * (end - start) + start);
+    this.value.set(this.original_value);
+    this.leaf = true;
   }
 
-  set_og_value() {
-    this.original_value = this.value;
-  }
 
   /**
    * Grab the value of the child
@@ -237,9 +236,7 @@ export function create_random_tree(
     height--;
   }
   fronteir.forEach((leaf) => {
-    leaf.randomize(start, end);
-    leaf.set_og_value();
-    leaf.leaf = true;
+    leaf.randomize_leaf(start, end);
   });
 
   const TREE = new Tree(ROOT);
@@ -258,13 +255,15 @@ export function deep_node_copy(
 
 export async function minimax(input_tree: Tree): Promise<Tree | null> {
   function minimax_run(node: TreeNode): number {
-    if (node.value == null) {
+    let value = get(node.value);
+    if (value == null) {
       const child_values = node.children.map((child) => minimax_run(child));
-      node.value = node.max
+      value = node.max
         ? Math.max(...child_values)
         : Math.min(...child_values);
     }
-    return node.value;
+    node.value.set(value);
+    return value;
   }
   minimax_run(input_tree.root);
   return input_tree;
@@ -290,7 +289,7 @@ export async function alphabeta(
     beta: number
   ): Promise<number | null> {
     if (node.leaf) {
-      return node.value;
+      return get(node.value);
     }
     let current = node.max
       ? Number.NEGATIVE_INFINITY
@@ -322,7 +321,7 @@ export async function alphabeta(
       }
       await highlight_node(element, 200);
     }
-    node.value = current;
+    node.value.set(current);
     return current;
   }
   await alpha_beta_run(

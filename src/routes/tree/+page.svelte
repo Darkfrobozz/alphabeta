@@ -10,7 +10,6 @@
     validate_numbers,
   } from "$lib/Tree";
   import type { Edge, TreeNode } from "$lib/Tree";
-  import { fromStore } from "svelte/store";
   import type { Attachment } from "svelte/attachments";
 
   let tree_height = "4";
@@ -76,6 +75,16 @@
         } else {
           element.classList.remove("highlighted");
         }
+      });
+
+      return unsubscribe;
+    };
+  }
+
+  function subscribeToValue(valueStore: Writable<number | null>): Attachment {
+    return (element) => {
+      const unsubscribe = valueStore.subscribe((value) => {
+        element.textContent = value !== null ? value.toString() : "";
       });
 
       return unsubscribe;
@@ -148,6 +157,7 @@
               <text
                 text-anchor="middle"
                 dominant-baseline="middle"
+                {@attach subscribeToValue(node.value)}
                 font-size="12"
                 fill="black"
               >
