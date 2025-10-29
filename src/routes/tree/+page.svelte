@@ -304,7 +304,7 @@
   <a href="/" aria-label="Home" id="home">Back</a>
 </main>
 
-<style>
+<style lang="scss">
   #home {
     position: absolute;
     top: 1rem;
